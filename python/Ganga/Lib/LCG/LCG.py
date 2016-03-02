@@ -1668,7 +1668,7 @@ sys.exit(0)
             return
 
         # loop over the jobs in each class
-        status_info, missing_glite_jids = grid.status(jobdict.values())
+        status_info, missing_glite_jids = grid.status(jobdict.keys())
 
         __fail_missing_jobs__(missing_glite_jids, jobdict)
 
