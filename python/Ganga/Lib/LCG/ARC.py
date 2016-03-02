@@ -18,7 +18,7 @@ from Ganga.Lib.LCG.Utility import get_md5sum
 from Ganga.Lib.LCG.ElapsedTimeProfiler import ElapsedTimeProfiler
 
 from Ganga.Lib.LCG.Grid import Grid
-from Ganga.Lib.LCG.LCG import grids
+from Ganga.Lib.LCG.LCG import grid
 from Ganga.Lib.LCG.GridftpSandboxCache import GridftpSandboxCache
 
 from Ganga.GPIDev.Base.Proxy import getName
@@ -98,7 +98,7 @@ class ARC(IBackend):
 
         if self.sandboxcache._name == 'LCGSandboxCache':
             if not self.sandboxcache.lfc_host:
-                self.sandboxcache.lfc_host = grids['GLITE'].__get_lfc_host__()
+                self.sandboxcache.lfc_host = grid.__get_lfc_host__()
 
             if not self.sandboxcache.se:
 
@@ -165,7 +165,7 @@ class ARC(IBackend):
 
         # or in general, query it from the Grid object
         if not lfc_host:
-            lfc_host = grids['GLITE'].__get_lfc_host__()
+            lfc_host = grid.__get_lfc_host__()
 
         idx['lfc_host'] = lfc_host
 
@@ -298,7 +298,7 @@ class ARC(IBackend):
         for id, jdl in node_jdls.items():
             mt_data.append((id, jdl))
 
-        myAlg = MyAlgorithm(gridObj=grids['GLITE'], masterInputWorkspace=job.getInputWorkspace(
+        myAlg = MyAlgorithm(gridObj=grid, masterInputWorkspace=job.getInputWorkspace(
         ), ce=self.CE, arcverbose=self.verbose)
         myData = Data(collection=mt_data)
 
@@ -312,7 +312,7 @@ class ARC(IBackend):
             # submitted jobs on WMS immediately
             logger.error(
                 'some bulk jobs not successfully (re)submitted, canceling submitted jobs on WMS')
-            grids['GLITE'].arc_cancelMultiple(runner.getResults().values())
+            grid.arc_cancelMultiple(runner.getResults().values())
             return None
         else:
             return runner.getResults()
@@ -881,7 +881,7 @@ sys.exit(0)
             logger.warning('Job %s is not running.' % job.getFQID('.'))
             return False
 
-        return grids['GLITE'].arc_cancel([self.id])
+        return grid.arc_cancel([self.id])
 
     def master_kill(self):
         '''kill the master job to the grid'''
@@ -910,7 +910,7 @@ sys.exit(0)
                 ids.append(sj.backend.id)
 
         # 2. cancel the collected jobs
-        ck = grids['GLITE'].arc_cancelMultiple(ids)
+        ck = grid.arc_cancelMultiple(ids)
         if not ck:
             logger.warning('Job cancellation failed')
             return False
@@ -1030,7 +1030,7 @@ sys.exit(0)
         #        self.CE = allowed_celist[0]
 
         # use arc info to check for any endpoints recorded in the config file
-        rc, output = grids['GLITE'].arc_info()
+        rc, output = grid.arc_info()
 
         if not self.CE and rc != 0:
             raise GangaException(
@@ -1040,10 +1040,6 @@ sys.exit(0)
         else:
             logger.info("Using ARC CE endpoints defined in '%s'" %
                         config['ArcConfigFile'])
-
-        # delegate proxy to ARC CE
-        # if not grids['GLITE'].arc_proxy_delegation(self.CE):
-        #    logger.warning('proxy delegation to %s failed' % self.CE)
 
         # doing massive job preparation
         if len(job.subjobs) == 0:
@@ -1065,7 +1061,7 @@ sys.exit(0)
         xrslpath = self.preparejob(subjobconfig, master_job_sandbox)
 
         if xrslpath:
-            self.id = grids['GLITE'].arc_submit(
+            self.id = grid.arc_submit(
                 xrslpath, self.CE, self.verbose)
 
             if self.id:
@@ -1102,7 +1098,7 @@ sys.exit(0)
         ick = False
 
         # delegate proxy to ARC CE
-        if not grids['GLITE'].arc_proxy_delegation(self.CE):
+        if not grid.arc_proxy_delegation(self.CE):
             logger.warning('proxy delegation to %s failed' % self.CE)
 
         if not job.master and len(job.subjobs) == 0:
@@ -1138,7 +1134,7 @@ sys.exit(0)
         jdlpath = job.getInputWorkspace().getPath("__jdlfile__")
 
         if jdlpath:
-            self.id = grids['GLITE'].arc_submit(jdlpath, self.CE, self.verbose)
+            self.id = grid.arc_submit(jdlpath, self.CE, self.verbose)
 
             if self.id:
                 # refresh the lcg job information
@@ -1164,7 +1160,7 @@ sys.exit(0)
         if len(jobdict.keys()) == 0:
             return
 
-        jobInfoDict = grids['GLITE'].arc_status(
+        jobInfoDict = grid.arc_status(
             jobdict.keys(), backenddict.keys())
         jidListForPurge = []
 
@@ -1191,8 +1187,8 @@ sys.exit(0)
                     elif info['State'] in ['Finished', '(FINISHED)', 'Finished (FINISHED)']:
 
                         # grab output sandbox
-                        if grids['GLITE'].arc_get_output(job.backend.id, job.getOutputWorkspace(create=True).getPath()):
-                            (ick, app_exitcode) = grids['GLITE'].__get_app_exitcode__(
+                        if grid.arc_get_output(job.backend.id, job.getOutputWorkspace(create=True).getPath()):
+                            (ick, app_exitcode) = grid.__get_app_exitcode__(
                                 job.getOutputWorkspace(create=True).getPath())
                             job.backend.exitcode = app_exitcode
 
@@ -1224,7 +1220,7 @@ sys.exit(0)
 
         # purging the jobs the output has been fetched locally
         if jidListForPurge:
-            if not grids['GLITE'].arc_purgeMultiple(jidListForPurge):
+            if not grid.arc_purgeMultiple(jidListForPurge):
                 logger.warning("Failed to purge all ARC jobs.")
 
 
