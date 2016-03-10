@@ -64,7 +64,8 @@ class CREAM(IBackend):
         'reason': SimpleItem(defvalue='', protected=1, copyable=0, doc='Reason of causing the job status'),
         'workernode': SimpleItem(defvalue='', protected=1, copyable=0, doc='The worker node on which the job actually runs.'),
         'isbURI': SimpleItem(defvalue='', protected=1, copyable=0, doc='The input sandbox URI on CREAM CE'),
-        'osbURI': SimpleItem(defvalue='', protected=1, copyable=0, doc='The output sandbox URI on CREAM CE')
+        'osbURI': SimpleItem(defvalue='', protected=1, copyable=0, doc='The output sandbox URI on CREAM CE'),
+        'delegation_id': SimpleItem(defvalue='', typelist=['str'], hidden=True),
     })
 
     _category = 'backends'
@@ -318,17 +319,18 @@ class CREAM(IBackend):
         # the algorithm for submitting a single bulk job
         class MyAlgorithm(Algorithm):
 
-            def __init__(self, gridObj, masterInputWorkspace, ce):
+            def __init__(self, gridObj, masterInputWorkspace, ce, delid):
                 Algorithm.__init__(self)
                 self.inpw = masterInputWorkspace
                 self.gridObj = gridObj
                 self.ce = ce
+                self.delid = delid
 
             def process(self, jdl_info):
                 my_sj_id = jdl_info[0]
                 my_sj_jdl = jdl_info[1]
 
-                my_sj_jid = self.gridObj.cream_submit(my_sj_jdl, self.ce)
+                my_sj_jid = self.gridObj.cream_submit(my_sj_jdl, self.ce, self.delid)
 
                 if not my_sj_jid:
                     return False
@@ -341,7 +343,7 @@ class CREAM(IBackend):
             mt_data.append((id, jdl))
 
         myAlg = MyAlgorithm(
-            gridObj=grid, masterInputWorkspace=job.getInputWorkspace(), ce=self.CE)
+            gridObj=grid, masterInputWorkspace=job.getInputWorkspace(), ce=self.CE, delid=self.delegation_id)
         myData = Data(collection=mt_data)
 
         runner = MTRunner(name='cream_jsubmit', algorithm=myAlg,
@@ -1074,7 +1076,8 @@ sys.exit(0)
             raise GangaException('CREAM CE endpoint not set')
 
         # delegate proxy to CREAM CE
-        if not grid.cream_proxy_delegation(self.CE):
+        self.delegation_id = Grid.cream_proxy_delegation(self.CE, self.delegation_id)
+        if not self.delegation_id:
             logger.warning('proxy delegation to %s failed' % self.CE)
 
         # doing massive job preparation
@@ -1097,7 +1100,7 @@ sys.exit(0)
         jdlpath = self.preparejob(subjobconfig, master_job_sandbox)
 
         if jdlpath:
-            self.id = grid.cream_submit(jdlpath, self.CE)
+            self.id = grid.cream_submit(jdlpath, self.CE, self.delegation_id)
 
             if self.id:
                 self.actualCE = self.CE
@@ -1133,7 +1136,8 @@ sys.exit(0)
         ick = False
 
         # delegate proxy to CREAM CE
-        if not grid.cream_proxy_delegation(self.CE):
+        self.delegation_id = Grid.cream_proxy_delegation(self.CE, self.delegation_id)
+        if not self.delegation_id:
             logger.warning('proxy delegation to %s failed' % self.CE)
 
         if not job.master and len(job.subjobs) == 0:
@@ -1169,7 +1173,7 @@ sys.exit(0)
         jdlpath = job.getInputWorkspace().getPath("__jdlfile__")
 
         if jdlpath:
-            self.id = grid.cream_submit(jdlpath, self.CE)
+            self.id = grid.cream_submit(jdlpath, self.CE, self.delegation_id)
 
             if self.id:
                 # refresh the lcg job information
