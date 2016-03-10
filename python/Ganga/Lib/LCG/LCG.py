@@ -884,9 +884,6 @@ class LCG(IBackend):
 
             logger.debug('JDL used for match-making: %s' % jdlpath)
 
-            # If GLITE, tell it whether to enable perusal
-            grid.perusable = self.perusable
-
             matches = grid.list_match(jdlpath, ce=self.CE)
 
         except Exception as x:
@@ -910,8 +907,6 @@ class LCG(IBackend):
             return None
 
         jdlpath = self.preparejob(subjobconfig, master_job_sandbox)
-        # If GLITE, tell it whether to enable perusal
-        grid.perusable = self.perusable
 
         if config['MatchBeforeSubmit']:
             matches = grid.list_match(jdlpath, ce=self.CE)
@@ -919,7 +914,7 @@ class LCG(IBackend):
                 self.__print_no_resource_error__(jdlpath)
                 return None
 
-        self.id = grid.submit(jdlpath, ce=self.CE)
+        self.id = grid.submit(jdlpath, ce=self.CE, perusable=self.perusable)
 
         self.parent_id = self.id
 
@@ -940,7 +935,7 @@ class LCG(IBackend):
                 self.__print_no_resource_error__(jdlpath)
                 return None
 
-        self.id = grid.submit(jdlpath, ce=self.CE)
+        self.id = grid.submit(jdlpath, ce=self.CE, perusable=self.perusable)
         self.parent_id = self.id
 
         if self.id:
