@@ -590,11 +590,11 @@ class Registry(object):
         try:
             returnable_id = self.__safe_add(obj, force_index)
             self._loaded_ids.append(returnable_id)
-        except (RepositoryError) as err:
-            raise err
+        except RepositoryError as err:
+            raise
         except Exception as err:
             logger.debug("Unknown Add Error: %s" % str(err))
-            raise err
+            raise
 
         self._updateIndexCache(obj)
 
